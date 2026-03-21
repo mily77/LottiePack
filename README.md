@@ -1,5 +1,22 @@
 # LottiePack
 
+[English](#english) | [中文](#中文)
+
+## Table of Contents
+
+- [English](#english)
+  - [Features](#features)
+  - [How It Works](#how-it-works)
+  - [Usage](#usage)
+  - [Tech Stack](#tech-stack)
+- [中文](#中文)
+  - [功能特性](#功能特性)
+  - [工作流程](#工作流程)
+  - [使用方式](#使用方式)
+  - [技术栈](#技术栈)
+
+## English
+
 LottiePack is a macOS app for turning Lottie animation sources into `.lottie` packages in a clean batch workflow. It accepts animation folders, standalone `data.json` files, and `.zip` archives, then rewrites image assets, builds the required manifest, and exports ready-to-use `.lottie` files.
 
 ## Features
@@ -60,7 +77,7 @@ During packaging, local image references in the source JSON are copied into the 
 
 
 
-## LottiePark
+## 中文
 
 LottiePack 是一个 macOS 应用，用于将 Lottie 动画资源快速打包为 `.lottie` 文件，适合批量处理工作流。它支持导入动画文件夹、单独的 `data.json` 文件以及 `.zip` 压缩包，并会自动重写图片资源路径、生成必要的清单文件，最终导出可直接使用的 `.lottie` 文件。
 
