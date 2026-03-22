@@ -15,10 +15,10 @@ enum ConversionStatus: Equatable {
 
     var label: String {
         switch self {
-        case .pending: "待转换"
-        case .converting: "转换中"
-        case .success: "已完成"
-        case .failed: "失败"
+        case .pending: L10n.tr("status.pending")
+        case .converting: L10n.tr("status.converting")
+        case .success: L10n.tr("status.success")
+        case .failed: L10n.tr("status.failed")
         }
     }
 
@@ -59,9 +59,9 @@ enum DotLottieConversionError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidJSON:
-            return "Lottie JSON 解析失败。"
+            return L10n.tr("error.invalid_json")
         case .zipFailed:
-            return "生成 .lottie 文件失败。"
+            return L10n.tr("error.zip_failed")
         }
     }
 }
@@ -92,7 +92,7 @@ final class DotLottieConverter {
                 let prefix = assets[index]["u"] as? String ?? ""
                 let sourceImageURL = importedItem.workingDirectory.appending(path: prefix).appending(path: originalPath)
                 guard fileManager.fileExists(atPath: sourceImageURL.path) else {
-                    warnings.append("跳过缺失图片: \(prefix)\(originalPath)")
+                    warnings.append(L10n.tr("warning.skip_missing_image", prefix, originalPath))
                     continue
                 }
 

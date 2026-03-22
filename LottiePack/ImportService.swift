@@ -21,9 +21,9 @@ enum ImportSourceType: String, Hashable {
 
     var label: String {
         switch self {
-        case .folder: "文件夹"
-        case .json: "JSON"
-        case .zip: "ZIP"
+        case .folder: L10n.tr("import.source.folder")
+        case .json: L10n.tr("import.source.json")
+        case .zip: L10n.tr("import.source.zip")
         }
     }
 }
@@ -35,7 +35,7 @@ enum ImportServiceError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .unzipFailed(let path, let reason):
-            return "ZIP 解压失败: \(path)\n\(reason)"
+            return L10n.tr("error.unzip_failed", path, reason)
         }
     }
 }
@@ -120,12 +120,12 @@ final class ImportService {
             let prefix = asset["u"] as? String ?? ""
             let imageURL = jsonURL.deletingLastPathComponent().appending(path: prefix).appending(path: path)
             if !fileManager.fileExists(atPath: imageURL.path) {
-                warnings.append("缺少图片资源: \(prefix)\(path)")
+                warnings.append(L10n.tr("warning.missing_image", prefix, path))
             }
         }
 
         if assets.isEmpty {
-            warnings.append("未发现 assets，可能是纯向量动画。")
+            warnings.append(L10n.tr("warning.no_assets"))
         }
 
         return warnings

@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 /// 主界面：负责组合任务列表、设置面板、详情与日志区域。
 struct ContentView: View {
     @StateObject private var viewModel = WorkspaceViewModel()
+    @EnvironmentObject private var preferences: AppPreferences
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
@@ -14,7 +15,8 @@ struct ContentView: View {
         }
         .frame(minWidth: 1080, minHeight: 720)
         .background(windowBackground)
-        .alert("转换失败", isPresented: Binding(
+        .environment(\.locale, preferences.locale)
+        .alert(L10n.tr("alert.conversion_failed.title"), isPresented: Binding(
             get: { viewModel.alertMessage != nil },
             set: { newValue in
                 if !newValue {
@@ -22,7 +24,7 @@ struct ContentView: View {
                 }
             }
         )) {
-            Button("好") {
+            Button(L10n.tr("alert.dismiss")) {
                 viewModel.alertMessage = nil
             }
         } message: {
@@ -69,7 +71,7 @@ struct ContentView: View {
             }
             .font(.system(size: 24, weight: .bold, design: .rounded))
             .foregroundStyle(heroPrimaryTextColor)
-            Text("把 Lottie 资源目录、`data.json` 或 `.zip` 快速转换成 `.lottie` 文件。")
+            Text(L10n.tr("hero.subtitle"))
                 .font(.subheadline)
                 .foregroundStyle(heroSecondaryTextColor)
                 .fixedSize(horizontal: false, vertical: true)
@@ -109,11 +111,11 @@ struct ContentView: View {
 
     private var actionCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionHeader("操作", subtitle: "导入资源、选择导出目录并启动转换")
+            sectionHeader(L10n.tr("section.actions.title"), subtitle: L10n.tr("section.actions.subtitle"))
             Button {
                 viewModel.importItems()
             } label: {
-                Label("导入资源", systemImage: "square.and.arrow.down")
+                Label(L10n.tr("action.import"), systemImage: "square.and.arrow.down")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(BrandButtonStyle(role: .primary))
@@ -121,7 +123,7 @@ struct ContentView: View {
             Button {
                 viewModel.selectExportDirectory()
             } label: {
-                Label(viewModel.exportDirectory == nil ? "选择导出目录" : "更换导出目录", systemImage: "folder")
+                Label(viewModel.exportDirectory == nil ? L10n.tr("action.select_export") : L10n.tr("action.change_export"), systemImage: "folder")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(BrandButtonStyle(role: .secondary))
@@ -131,14 +133,14 @@ struct ContentView: View {
                     await viewModel.convertAll()
                 }
             } label: {
-                Label(viewModel.isConverting ? "转换中..." : "开始转换", systemImage: "sparkles.rectangle.stack")
+                Label(viewModel.isConverting ? L10n.tr("action.converting") : L10n.tr("action.convert"), systemImage: "sparkles.rectangle.stack")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(BrandButtonStyle(role: .primary))
             .disabled(!viewModel.canConvert)
 
             if let exportDirectory = viewModel.exportDirectory {
-                MetadataStripView(title: "导出目录", value: exportDirectory.path, icon: "folder.fill")
+                MetadataStripView(title: L10n.tr("workspace.export_directory"), value: exportDirectory.path, icon: "folder.fill")
             }
         }
         .padding(18)
@@ -148,10 +150,13 @@ struct ContentView: View {
     private var taskList: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                sectionHeader("任务列表", subtitle: viewModel.items.isEmpty ? "等待导入动画资源" : "已导入 \(viewModel.items.count) 个任务")
+                sectionHeader(
+                    L10n.tr("section.tasks.title"),
+                    subtitle: viewModel.items.isEmpty ? L10n.tr("section.tasks.subtitle.empty") : L10n.tr("section.tasks.subtitle.count", viewModel.items.count)
+                )
                 Spacer()
                 if !viewModel.items.isEmpty {
-                    Button("清空") {
+                    Button(L10n.tr("action.clear")) {
                         viewModel.clearItems()
                     }
                     .buttonStyle(BrandButtonStyle(role: .ghost))
@@ -160,9 +165,9 @@ struct ContentView: View {
 
             if viewModel.items.isEmpty {
                 ContentUnavailableView(
-                    "还没有导入任务",
+                    L10n.tr("empty.tasks.title"),
                     systemImage: "tray",
-                    description: Text("支持文件夹、`data.json`、`.zip`，也支持直接拖拽。")
+                    description: Text(L10n.tr("empty.tasks.description"))
                 )
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 24)
@@ -185,19 +190,19 @@ struct ContentView: View {
 
     private var summaryGrid: some View {
         HStack(spacing: 16) {
-            SummaryCard(title: "已导入", value: "\(viewModel.items.count)", subtitle: "待处理资源", tint: .blue)
-            SummaryCard(title: "成功", value: "\(viewModel.items.filter { $0.status == .success }.count)", subtitle: "已生成 .lottie", tint: .green)
-            SummaryCard(title: "警告", value: "\(viewModel.items.reduce(0) { $0 + $1.warnings.count })", subtitle: "需人工确认", tint: .orange)
-            SummaryCard(title: "失败", value: "\(viewModel.items.filter { if case .failed = $0.status { return true } else { return false } }.count)", subtitle: "需要重试", tint: .red)
+            SummaryCard(title: L10n.tr("summary.imported.title"), value: "\(viewModel.items.count)", subtitle: L10n.tr("summary.imported.subtitle"), tint: .blue)
+            SummaryCard(title: L10n.tr("summary.success.title"), value: "\(viewModel.items.filter { $0.status == .success }.count)", subtitle: L10n.tr("summary.success.subtitle"), tint: .green)
+            SummaryCard(title: L10n.tr("summary.warnings.title"), value: "\(viewModel.items.reduce(0) { $0 + $1.warnings.count })", subtitle: L10n.tr("summary.warnings.subtitle"), tint: .orange)
+            SummaryCard(title: L10n.tr("summary.failed.title"), value: "\(viewModel.items.filter { if case .failed = $0.status { return true } else { return false } }.count)", subtitle: L10n.tr("summary.failed.subtitle"), tint: .red)
         }
     }
 
     private var settingsCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionHeader("导出设置", subtitle: "控制 Finder 行为和重名处理策略")
-            Toggle("转换完成后在 Finder 中显示", isOn: $viewModel.revealInFinder)
-            Toggle("输出重名时自动追加序号", isOn: $viewModel.autoRenameConflicts)
-            Text("当前支持导入资源目录、单个 `data.json` 和 `.zip` 包。ZIP 会先解压到临时目录再转换。")
+            sectionHeader(L10n.tr("section.export_settings.title"), subtitle: L10n.tr("section.export_settings.subtitle"))
+            Toggle(L10n.tr("settings.reveal_in_finder"), isOn: $viewModel.revealInFinder)
+            Toggle(L10n.tr("settings.auto_rename"), isOn: $viewModel.autoRenameConflicts)
+            Text(L10n.tr("settings.description"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -207,7 +212,7 @@ struct ContentView: View {
 
     private var selectedDetailCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            sectionHeader("任务详情", subtitle: "查看来源、状态和导出结果")
+            sectionHeader(L10n.tr("detail.title"), subtitle: L10n.tr("detail.subtitle"))
 
             if let item = viewModel.selectedItem {
                 HStack(alignment: .center) {
@@ -222,22 +227,22 @@ struct ContentView: View {
                     StatusBadge(status: item.status)
                 }
 
-                DetailSection(title: "来源", icon: "tray.and.arrow.down.fill") {
-                    MetadataStripView(title: "资源路径", value: item.sourceURL.path, icon: "folder")
+                DetailSection(title: L10n.tr("detail.source"), icon: "tray.and.arrow.down.fill") {
+                    MetadataStripView(title: L10n.tr("detail.source_path"), value: item.sourceURL.path, icon: "folder")
                 }
 
-                DetailSection(title: "状态", icon: "gauge.with.needle.fill") {
-                    MetadataStripView(title: "当前状态", value: item.status.label, icon: item.status.icon)
+                DetailSection(title: L10n.tr("detail.status"), icon: "gauge.with.needle.fill") {
+                    MetadataStripView(title: L10n.tr("detail.status_value"), value: item.status.label, icon: item.status.icon)
                 }
 
                 if let outputURL = item.outputURL {
-                    DetailSection(title: "导出文件", icon: "shippingbox.fill") {
-                        MetadataStripView(title: "文件位置", value: outputURL.path, icon: "doc.fill")
+                    DetailSection(title: L10n.tr("detail.export_file"), icon: "shippingbox.fill") {
+                        MetadataStripView(title: L10n.tr("workspace.output_path"), value: outputURL.path, icon: "doc.fill")
                     }
                 }
 
                 if !item.warnings.isEmpty {
-                    DetailSection(title: "警告", icon: "exclamationmark.triangle.fill") {
+                    DetailSection(title: L10n.tr("detail.warnings"), icon: "exclamationmark.triangle.fill") {
                         ForEach(item.warnings, id: \.self) { warning in
                             WarningRowView(text: warning)
                         }
@@ -245,12 +250,12 @@ struct ContentView: View {
                 }
 
                 if let failure = item.failureMessage {
-                    DetailSection(title: "失败原因", icon: "xmark.octagon.fill") {
+                    DetailSection(title: L10n.tr("detail.failure_reason"), icon: "xmark.octagon.fill") {
                         WarningRowView(text: failure, tint: .red, icon: "xmark.octagon.fill")
                     }
                 }
             } else {
-                Text("选择一个任务查看详情。")
+                Text(L10n.tr("detail.no_selection"))
                     .foregroundStyle(.secondary)
             }
         }
@@ -260,9 +265,9 @@ struct ContentView: View {
 
     private var logCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionHeader("运行日志", subtitle: "帮助排查导入或转换过程中的问题")
+            sectionHeader(L10n.tr("section.logs.title"), subtitle: L10n.tr("section.logs.subtitle"))
             if viewModel.logs.isEmpty {
-                Text("暂无日志")
+                Text(L10n.tr("empty.logs"))
                     .foregroundStyle(.secondary)
             } else {
                 ScrollView {
@@ -464,7 +469,7 @@ private struct TaskRow: View {
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
                 if !item.warnings.isEmpty {
-                    Text("\(item.warnings.count) 个警告")
+                    Text(L10n.tr("warning.task_count", item.warnings.count))
                         .font(.caption)
                         .foregroundStyle(.orange)
                         .lineLimit(2)
@@ -738,10 +743,10 @@ private struct DropZoneView: View {
                 Image(systemName: "square.and.arrow.down.on.square")
                     .font(.system(size: 24))
                     .foregroundStyle(dropAccentColor)
-                Text("拖拽资源到这里")
+                Text(L10n.tr("drop.title"))
                     .font(.headline)
                     .foregroundStyle(dropPrimaryTextColor)
-                Text("支持动画目录、`data.json`、`.zip`")
+                Text(L10n.tr("drop.subtitle"))
                     .font(.caption)
                     .foregroundStyle(dropSecondaryTextColor)
                     .multilineTextAlignment(.center)
@@ -778,4 +783,5 @@ private struct DropZoneView: View {
 
 #Preview {
     ContentView()
+        .environmentObject(AppPreferences.shared)
 }

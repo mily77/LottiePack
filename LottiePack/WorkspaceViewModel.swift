@@ -56,7 +56,7 @@ final class WorkspaceViewModel: ObservableObject {
         panel.canChooseFiles = true
         panel.allowsOtherFileTypes = false
         panel.allowedContentTypes = [.item]
-        panel.prompt = "导入"
+        panel.prompt = L10n.tr("import.prompt")
 
         guard panel.runModal() == .OK else { return }
 
@@ -71,11 +71,11 @@ final class WorkspaceViewModel: ObservableObject {
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.canCreateDirectories = true
-        panel.prompt = "选择"
+        panel.prompt = L10n.tr("settings.select_export_prompt")
 
         guard panel.runModal() == .OK, let url = panel.url else { return }
         exportDirectory = url
-        appendLog("已设置导出目录: \(url.path)")
+        appendLog(L10n.tr("log.export_directory_set", url.path))
     }
 
     /// 处理来自 NSItemProvider 的拖拽输入（例如跨应用拖拽）。
@@ -100,7 +100,7 @@ final class WorkspaceViewModel: ObservableObject {
     /// 顺序执行全部任务转换，逐项更新状态、告警和失败信息。
     func convertAll() async {
         guard let exportDirectory else {
-            alertMessage = "请先选择导出目录。"
+            alertMessage = L10n.tr("error.select_export_directory")
             return
         }
 
@@ -128,11 +128,11 @@ final class WorkspaceViewModel: ObservableObject {
                 items[index].outputURL = result.outputURL
                 items[index].warnings = result.warnings
                 outputURLs.append(result.outputURL)
-                appendLog("已生成: \(result.outputURL.lastPathComponent)")
+                appendLog(L10n.tr("log.convert_success", result.outputURL.lastPathComponent))
             } catch {
                 items[index].status = .failed
                 items[index].failureMessage = error.localizedDescription
-                appendLog("转换失败: \(item.displayName) - \(error.localizedDescription)")
+                appendLog(L10n.tr("log.convert_failed", item.displayName, error.localizedDescription))
             }
         }
 
@@ -149,7 +149,7 @@ final class WorkspaceViewModel: ObservableObject {
             let importedItems = try await importService.importItems(from: urls)
             if importedItems.isEmpty {
                 // 导入成功但未识别到可转换 JSON 时，给出明确提示避免用户误判为程序无响应。
-                alertMessage = "没有发现可转换的动画资源。请确认目录中包含 `data.json`。"
+                alertMessage = L10n.tr("error.no_convertible_assets")
                 return
             }
 
@@ -161,7 +161,7 @@ final class WorkspaceViewModel: ObservableObject {
             if selectedItemID == nil {
                 selectedItemID = items.first?.id
             }
-            appendLog("已导入 \(viewData.count) 个任务")
+            appendLog(L10n.tr("log.imported_count", viewData.count))
         } catch {
             alertMessage = error.localizedDescription
         }
