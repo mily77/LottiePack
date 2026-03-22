@@ -1,6 +1,6 @@
 # LottiePack
 
-[English](#english) | [中文](#中文)
+[English](#english) | [中文](#中文) | [日本語](#日本語)
 
 ## Table of Contents
 
@@ -14,6 +14,11 @@
   - [工作流程](#工作流程)
   - [使用方式](#使用方式)
   - [技术栈](#技术栈)
+- [日本語](#日本語)
+  - [主な機能](#主な機能)
+  - [動作フロー](#動作フロー)
+  - [使い方](#使い方)
+  - [技術スタック](#技術スタック)
 
 ## English
 
@@ -52,6 +57,12 @@ During packaging, local image references in the source JSON are copied into the 
    - `Auto-rename duplicate outputs`
 5. Click `Start Conversion`.
 6. Check the task list, detail panel, and logs for results, warnings, or failures.
+
+### App Language
+
+- The app currently supports English, Simplified Chinese, and Japanese.
+- You can switch language from `LottiePack > Settings...` or directly from the menu bar `Language` menu.
+- The selected language is applied immediately and remembered for the next launch.
 
 ### Supported Inputs
 
@@ -115,6 +126,12 @@ LottiePack 是一个 macOS 应用，用于将 Lottie 动画资源快速打包为
 5. 点击 `Start Conversion`。
 6. 在任务列表、详情面板和日志中查看结果、警告或失败原因。
 
+### 界面语言
+
+- 应用当前支持 English、简体中文、日本语。
+- 可通过 `LottiePack > Settings...` 或菜单栏里的 `Language` 菜单切换语言。
+- 切换后立即生效，并会记住下次启动时的选择。
+
 ### 支持的输入类型
 
 - 包含 Lottie 资源的文件夹
@@ -134,3 +151,67 @@ LottiePack 是一个 macOS 应用，用于将 Lottie 动画资源快速打包为
 - SwiftUI
 - AppKit
 - 使用 `ditto`、`unzip` 和 `zip` 进行 macOS 文件处理
+
+## 日本語
+
+LottiePack は、Lottie アニメーション素材を `.lottie` パッケージへまとめて変換するための macOS アプリです。アニメーションフォルダ、単体の `data.json`、`.zip` アーカイブを読み込み、画像アセットの参照を書き換え、必要なマニフェストを生成し、そのまま利用できる `.lottie` ファイルを書き出します。
+
+## 主な機能
+
+- フォルダ、`data.json`、`.zip` の一括読み込み
+- ワークスペースへのドラッグ＆ドロップ対応
+- フォルダ内や展開後アーカイブ内のアニメーション JSON を自動検出
+- 外部画像アセットを検証し、書き出し前に警告を表示
+- 同名ファイルの書き出し時に自動で連番を付与し、上書きを回避
+- 変換完了後に Finder で出力ファイルを表示可能
+
+## 動作フロー
+
+1. 1 つ以上の Lottie ソースを読み込みます。
+2. 書き出し先フォルダを選択します。
+3. 変換を開始します。
+4. LottiePack は各タスクを次の構成を持つ `.lottie` ファイルへまとめます。
+   - `manifest.json`
+   - `animations/animation.json`
+   - `images/`
+
+パッケージ化の際、元の JSON 内で参照されているローカル画像はパッケージ内へコピーされ、参照先は `/images/` に統一されます。
+
+## 使い方
+
+### アプリで使う
+
+1. Xcode でプロジェクトを開き、`LottiePack` ターゲットを実行します。
+2. `Import Assets` で素材を読み込むか、ファイルやフォルダをドロップ領域へ直接ドラッグします。
+3. `Select Export Directory` をクリックして `.lottie` の保存先を選びます。
+4. 必要に応じて次の設定を調整します。
+   - `Reveal in Finder after conversion`
+   - `Auto-rename duplicate outputs`
+5. `Start Conversion` をクリックします。
+6. タスクリスト、詳細パネル、ログで結果・警告・失敗内容を確認します。
+
+### アプリの言語
+
+- 現在、English・简体中文・日本語に対応しています。
+- `LottiePack > Settings...` またはメニューバーの `Language` メニューから切り替えできます。
+- 選択した言語はすぐに反映され、次回起動時にも保持されます。
+
+### 対応入力形式
+
+- Lottie 素材を含むフォルダ
+- 単体の `data.json` またはその他の Lottie JSON
+- Lottie フォルダ構成を含む `.zip` アーカイブ
+
+### 補足
+
+- フォルダ内に複数の JSON がある場合、`data.json` が優先されます。
+- 既存の dotLottie パッケージを誤って入力扱いしないよう、`manifest.json` は読み込み時に除外されます。
+- 外部画像が不足していても、必ずしも変換は停止しませんが、警告として表示されます。
+- ZIP は変換前に一時ディレクトリへ展開されます。
+
+## 技術スタック
+
+- Swift
+- SwiftUI
+- AppKit
+- `ditto`、`unzip`、`zip` を利用した macOS ファイル処理
