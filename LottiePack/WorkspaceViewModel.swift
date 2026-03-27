@@ -16,9 +16,15 @@ final class WorkspaceViewModel: ObservableObject {
     @Published var alertMessage: String?
     @AppStorage("revealInFinder") var revealInFinder = true
     @AppStorage("autoRenameConflicts") var autoRenameConflicts = true
+    @AppStorage("jsonExportFormatting") private var jsonExportFormattingRawValue = JSONExportFormatting.compressed.rawValue
 
     private let importService = ImportService()
     private let converter = DotLottieConverter()
+
+    var jsonExportFormatting: JSONExportFormatting {
+        get { JSONExportFormatting(rawValue: jsonExportFormattingRawValue) ?? .compressed }
+        set { jsonExportFormattingRawValue = newValue.rawValue }
+    }
 
     /// 初始化默认导出目录为应用支持目录，避免桌面权限受限导致首次转换失败。
     init() {
@@ -111,6 +117,7 @@ final class WorkspaceViewModel: ObservableObject {
             items[index].status = .converting
             items[index].failureMessage = nil
             items[index].outputURL = nil
+            items[index].sizeAnalysis = nil
         }
 
         var outputURLs: [URL] = []
@@ -122,13 +129,16 @@ final class WorkspaceViewModel: ObservableObject {
                 let result = try await converter.convert(
                     importedItem: item.importedItem,
                     exportDirectory: exportDirectory,
-                    autoRenameConflicts: autoRenameConflicts
+                    autoRenameConflicts: autoRenameConflicts,
+                    jsonFormatting: jsonExportFormatting
                 )
                 items[index].status = .success
                 items[index].outputURL = result.outputURL
+                items[index].sizeAnalysis = result.sizeAnalysis
                 items[index].warnings = result.warnings
                 outputURLs.append(result.outputURL)
                 appendLog(L10n.tr("log.convert_success", result.outputURL.lastPathComponent))
+                appendLog(sizeAnalysisLogMessage(for: item.displayName, analysis: result.sizeAnalysis))
             } catch {
                 items[index].status = .failed
                 items[index].failureMessage = error.localizedDescription
@@ -172,6 +182,85 @@ final class WorkspaceViewModel: ObservableObject {
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm:ss"
         logs.insert("[\(formatter.string(from: Date()))] \(message)", at: 0)
+    }
+
+    func formattedByteCount(_ bytes: UInt64) -> String {
+        let formatter = ByteCountFormatter()
+        formatter.allowedUnits = [.useBytes, .useKB, .useMB]
+        formatter.countStyle = .file
+        formatter.includesUnit = true
+        formatter.isAdaptive = true
+        return formatter.string(fromByteCount: Int64(bytes))
+    }
+
+    func formattedPercent(_ value: Double?) -> String {
+        guard let value else { return "-" }
+
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .percent
+        formatter.maximumFractionDigits = 1
+        formatter.minimumFractionDigits = 0
+        return formatter.string(from: NSNumber(value: value)) ?? "-"
+    }
+
+    func formattedSignedByteDelta(_ value: Int64) -> String {
+        let prefix = value > 0 ? "+" : (value < 0 ? "-" : "")
+        return prefix + formattedByteCount(value.magnitude)
+    }
+
+    func sizeInputSummary(_ analysis: ConversionSizeAnalysis) -> String {
+        L10n.tr(
+            "detail.size_input_summary_value",
+            formattedByteCount(analysis.inputTotalBytes),
+            formattedByteCount(analysis.sourceJSONBytes),
+            formattedByteCount(analysis.sourceImageBytes)
+        )
+    }
+
+    func sizeInputShareSummary(_ analysis: ConversionSizeAnalysis) -> String {
+        L10n.tr(
+            "detail.size_share_summary_value",
+            formattedPercent(analysis.sourceJSONShare),
+            formattedPercent(analysis.sourceImageShare)
+        )
+    }
+
+    func sizePackagedSummary(_ analysis: ConversionSizeAnalysis) -> String {
+        L10n.tr(
+            "detail.size_packaged_summary_value",
+            formattedByteCount(analysis.packagedTotalBytes),
+            formattedByteCount(analysis.packagedJSONBytes),
+            formattedByteCount(analysis.packagedImageBytes)
+        )
+    }
+
+    func sizeOutputSummary(_ analysis: ConversionSizeAnalysis) -> String {
+        L10n.tr(
+            "detail.size_output_summary_value",
+            formattedByteCount(analysis.outputArchiveBytes),
+            formattedPercent(analysis.compressionRatio)
+        )
+    }
+
+    func sizeJSONGrowthSummary(_ analysis: ConversionSizeAnalysis) -> String {
+        L10n.tr(
+            "detail.size_json_growth_value",
+            formattedSignedByteDelta(analysis.jsonGrowthBytes),
+            analysis.jsonFormatting.label
+        )
+    }
+
+    private func sizeAnalysisLogMessage(for displayName: String, analysis: ConversionSizeAnalysis) -> String {
+        L10n.tr(
+            "log.size_analysis",
+            displayName,
+            formattedByteCount(analysis.inputTotalBytes),
+            formattedPercent(analysis.sourceJSONShare),
+            formattedPercent(analysis.sourceImageShare),
+            formattedByteCount(analysis.outputArchiveBytes),
+            formattedPercent(analysis.compressionRatio),
+            analysis.jsonFormatting.label
+        )
     }
 
     /// 删除导入服务创建的临时目录，防止临时文件累积。

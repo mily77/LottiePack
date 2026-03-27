@@ -202,6 +202,17 @@ struct ContentView: View {
             sectionHeader(L10n.tr("section.export_settings.title"), subtitle: L10n.tr("section.export_settings.subtitle"))
             Toggle(L10n.tr("settings.reveal_in_finder"), isOn: $viewModel.revealInFinder)
             Toggle(L10n.tr("settings.auto_rename"), isOn: $viewModel.autoRenameConflicts)
+            Picker(L10n.tr("settings.json_format.label"), selection: Binding(
+                get: { viewModel.jsonExportFormatting },
+                set: { viewModel.jsonExportFormatting = $0 }
+            )) {
+                ForEach(JSONExportFormatting.allCases) { formatting in
+                    Text(formatting.label).tag(formatting)
+                }
+            }
+            Text(L10n.tr("settings.json_format.hint"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
             Text(L10n.tr("settings.description"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -238,6 +249,16 @@ struct ContentView: View {
                 if let outputURL = item.outputURL {
                     DetailSection(title: L10n.tr("detail.export_file"), icon: "shippingbox.fill") {
                         MetadataStripView(title: L10n.tr("workspace.output_path"), value: outputURL.path, icon: "doc.fill")
+                    }
+                }
+
+                if let sizeAnalysis = item.sizeAnalysis {
+                    DetailSection(title: L10n.tr("detail.size_analysis"), icon: "chart.bar.xaxis") {
+                        MetadataStripView(title: L10n.tr("detail.size_input"), value: viewModel.sizeInputSummary(sizeAnalysis), icon: "tray.full.fill")
+                        MetadataStripView(title: L10n.tr("detail.size_input_share"), value: viewModel.sizeInputShareSummary(sizeAnalysis), icon: "chart.pie.fill")
+                        MetadataStripView(title: L10n.tr("detail.size_packaged"), value: viewModel.sizePackagedSummary(sizeAnalysis), icon: "shippingbox.fill")
+                        MetadataStripView(title: L10n.tr("detail.size_output"), value: viewModel.sizeOutputSummary(sizeAnalysis), icon: "archivebox.fill")
+                        MetadataStripView(title: L10n.tr("detail.size_json_growth"), value: viewModel.sizeJSONGrowthSummary(sizeAnalysis), icon: "arrow.up.forward.and.arrow.down.backward")
                     }
                 }
 

@@ -9,6 +9,17 @@
 "detail.export_file" = "書き出しファイル";
 "detail.failure_reason" = "失敗理由";
 "detail.no_selection" = "タスクを選択すると詳細を表示します。";
+"detail.size_analysis" = "サイズ分析";
+"detail.size_input" = "入力サイズ";
+"detail.size_input_share" = "入力内訳";
+"detail.size_input_summary_value" = "合計 %@（JSON %@、画像 %@）";
+"detail.size_json_growth" = "JSON 増減";
+"detail.size_json_growth_value" = "元の JSON 比 %@、形式 %@";
+"detail.size_output" = "最終出力";
+"detail.size_output_summary_value" = "%@、圧縮率 %@";
+"detail.size_packaged" = "パッケージ内容";
+"detail.size_packaged_summary_value" = "合計 %@（JSON %@、画像 %@）";
+"detail.size_share_summary_value" = "JSON %@ / 画像 %@";
 "detail.source" = "入力元";
 "detail.source_path" = "元ファイルの場所";
 "detail.status" = "状態";
@@ -36,6 +47,7 @@
 "log.convert_success" = "生成完了: %@";
 "log.export_directory_set" = "書き出し先を設定しました: %@";
 "log.imported_count" = "%d 件のタスクを読み込みました";
+"log.size_analysis" = "サイズ分析 %@: 入力 %@（JSON %@ / 画像 %@）-> 出力 %@、圧縮率 %@、形式 %@";
 "menu.language.english" = "英語";
 "menu.language.japanese" = "日本語";
 "menu.language.simplified_chinese" = "中国語";
@@ -50,6 +62,10 @@
 "section.tasks.title" = "タスク一覧";
 "settings.auto_rename" = "同名の出力がある場合は連番を自動付与する";
 "settings.description" = "現在、アセットフォルダ、単体の `data.json`、`.zip` アーカイブを読み込めます。ZIP は一時フォルダへ展開してから変換します。";
+"settings.json_format.compressed" = "圧縮 JSON";
+"settings.json_format.hint" = "パッケージ内の `animation.json` を圧縮出力にするか、整形出力にするかを切り替えます。この設定は次回以降の書き出しにも保持されます。";
+"settings.json_format.label" = "アニメーション JSON 形式";
+"settings.json_format.readable" = "可読 JSON";
 "settings.language.hint" = "選択した言語はすぐに反映され、次回起動時にも保持されます。";
 "settings.language.label" = "アプリの言語";
 "settings.reveal_in_finder" = "変換後に Finder で表示する";

@@ -2,6 +2,14 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject private var preferences: AppPreferences
+    @AppStorage("jsonExportFormatting") private var jsonExportFormattingRawValue = JSONExportFormatting.compressed.rawValue
+
+    private var jsonExportFormatting: Binding<JSONExportFormatting> {
+        Binding(
+            get: { JSONExportFormatting(rawValue: jsonExportFormattingRawValue) ?? .compressed },
+            set: { jsonExportFormattingRawValue = $0.rawValue }
+        )
+    }
 
     var body: some View {
         Form {
@@ -12,6 +20,16 @@ struct SettingsView: View {
             }
 
             Text(L10n.tr("settings.language.hint"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Picker(L10n.tr("settings.json_format.label"), selection: jsonExportFormatting) {
+                ForEach(JSONExportFormatting.allCases) { formatting in
+                    Text(formatting.label).tag(formatting)
+                }
+            }
+
+            Text(L10n.tr("settings.json_format.hint"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

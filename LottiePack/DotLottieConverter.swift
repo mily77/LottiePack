@@ -4,6 +4,86 @@ import Foundation
 struct ConversionResult {
     let outputURL: URL
     let warnings: [String]
+    let sizeAnalysis: ConversionSizeAnalysis
+}
+
+/// 控制导出到 dotLottie 包内的 animation.json 写出格式。
+enum JSONExportFormatting: String, CaseIterable, Identifiable {
+    case compressed
+    case readable
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .compressed:
+            return L10n.tr("settings.json_format.compressed")
+        case .readable:
+            return L10n.tr("settings.json_format.readable")
+        }
+    }
+
+    var writingOptions: JSONSerialization.WritingOptions {
+        switch self {
+        case .compressed:
+            return [.sortedKeys]
+        case .readable:
+            return [.prettyPrinted, .sortedKeys]
+        }
+    }
+}
+
+/// 汇总一次转换前后的体积信息，便于判断 JSON 或图片是否导致包体变大。
+struct ConversionSizeAnalysis: Equatable {
+    let jsonFormatting: JSONExportFormatting
+    let sourceJSONBytes: UInt64
+    let sourceImageBytes: UInt64
+    let packagedAnimationJSONBytes: UInt64
+    let packagedManifestBytes: UInt64
+    let packagedImageBytes: UInt64
+    let outputArchiveBytes: UInt64
+
+    var inputTotalBytes: UInt64 {
+        sourceJSONBytes + sourceImageBytes
+    }
+
+    var packagedJSONBytes: UInt64 {
+        packagedAnimationJSONBytes + packagedManifestBytes
+    }
+
+    var packagedTotalBytes: UInt64 {
+        packagedJSONBytes + packagedImageBytes
+    }
+
+    var jsonGrowthBytes: Int64 {
+        Int64(packagedAnimationJSONBytes) - Int64(sourceJSONBytes)
+    }
+
+    var compressionRatio: Double? {
+        guard inputTotalBytes > 0 else { return nil }
+        return 1 - (Double(outputArchiveBytes) / Double(inputTotalBytes))
+    }
+
+    var sourceJSONShare: Double? {
+        percentage(of: sourceJSONBytes, in: inputTotalBytes)
+    }
+
+    var sourceImageShare: Double? {
+        percentage(of: sourceImageBytes, in: inputTotalBytes)
+    }
+
+    var packagedJSONShare: Double? {
+        percentage(of: packagedJSONBytes, in: packagedTotalBytes)
+    }
+
+    var packagedImageShare: Double? {
+        percentage(of: packagedImageBytes, in: packagedTotalBytes)
+    }
+
+    private func percentage(of numerator: UInt64, in denominator: UInt64) -> Double? {
+        guard denominator > 0 else { return nil }
+        return Double(numerator) / Double(denominator)
+    }
 }
 
 /// 转换任务在 UI 中的生命周期状态。
@@ -39,6 +119,7 @@ struct ConversionItemViewData: Identifiable {
     var status: ConversionStatus = .pending
     var warnings: [String]
     var outputURL: URL?
+    var sizeAnalysis: ConversionSizeAnalysis?
     var failureMessage: String?
 
     init(importedItem: ImportedAnimationItem) {
@@ -71,8 +152,14 @@ final class DotLottieConverter {
     private let fileManager = FileManager.default
 
     /// 执行单个任务转换：重写资源路径、生成清单并打包归档。
-    func convert(importedItem: ImportedAnimationItem, exportDirectory: URL, autoRenameConflicts: Bool) async throws -> ConversionResult {
+    func convert(
+        importedItem: ImportedAnimationItem,
+        exportDirectory: URL,
+        autoRenameConflicts: Bool,
+        jsonFormatting: JSONExportFormatting
+    ) async throws -> ConversionResult {
         let sourceData = try Data(contentsOf: importedItem.jsonURL)
+        let sourceJSONBytes = UInt64(sourceData.count)
         guard var root = try JSONSerialization.jsonObject(with: sourceData) as? [String: Any] else {
             throw DotLottieConversionError.invalidJSON
         }
@@ -84,6 +171,8 @@ final class DotLottieConverter {
         try fileManager.createDirectory(at: imagesDirectory, withIntermediateDirectories: true)
 
         var warnings = importedItem.warnings
+        var sourceImageBytes: UInt64 = 0
+        var packagedImageBytes: UInt64 = 0
         if var assets = root["assets"] as? [[String: Any]] {
             for index in assets.indices {
                 guard let originalPath = assets[index]["p"] as? String else { continue }
@@ -95,6 +184,10 @@ final class DotLottieConverter {
                     warnings.append(L10n.tr("warning.skip_missing_image", prefix, originalPath))
                     continue
                 }
+
+                let imageSize = fileSize(at: sourceImageURL)
+                sourceImageBytes += imageSize
+                packagedImageBytes += imageSize
 
                 let ext = sourceImageURL.pathExtension.isEmpty ? "png" : sourceImageURL.pathExtension
                 let imageName = "image_\(index).\(ext)"
@@ -112,8 +205,9 @@ final class DotLottieConverter {
             root["assets"] = assets
         }
 
-        let animationData = try JSONSerialization.data(withJSONObject: root, options: [.prettyPrinted, .sortedKeys])
+        let animationData = try JSONSerialization.data(withJSONObject: root, options: jsonFormatting.writingOptions)
         try animationData.write(to: animationsDirectory.appending(path: "animation.json"))
+        let packagedAnimationJSONBytes = UInt64(animationData.count)
 
         let manifest: [String: Any] = [
             "version": "1",
@@ -124,6 +218,7 @@ final class DotLottieConverter {
         // dotLottie 最小结构: manifest.json + animations/ + images/。
         let manifestData = try JSONSerialization.data(withJSONObject: manifest, options: [.prettyPrinted, .sortedKeys])
         try manifestData.write(to: packageDirectory.appending(path: "manifest.json"))
+        let packagedManifestBytes = UInt64(manifestData.count)
 
         let outputURL = try resolvedOutputURL(for: importedItem, exportDirectory: exportDirectory, autoRenameConflicts: autoRenameConflicts)
         let tempArchiveURL = packageDirectory.deletingLastPathComponent().appending(path: "\(UUID().uuidString).zip")
@@ -144,9 +239,22 @@ final class DotLottieConverter {
         }
         // 先生成 zip 再原子移动到目标路径，避免用户看到半成品文件。
         try fileManager.moveItem(at: tempArchiveURL, to: outputURL)
+        let outputArchiveBytes = fileSize(at: outputURL)
         try? fileManager.removeItem(at: packageDirectory)
 
-        return ConversionResult(outputURL: outputURL, warnings: Array(Set(warnings)).sorted())
+        return ConversionResult(
+            outputURL: outputURL,
+            warnings: Array(Set(warnings)).sorted(),
+            sizeAnalysis: ConversionSizeAnalysis(
+                jsonFormatting: jsonFormatting,
+                sourceJSONBytes: sourceJSONBytes,
+                sourceImageBytes: sourceImageBytes,
+                packagedAnimationJSONBytes: packagedAnimationJSONBytes,
+                packagedManifestBytes: packagedManifestBytes,
+                packagedImageBytes: packagedImageBytes,
+                outputArchiveBytes: outputArchiveBytes
+            )
+        )
     }
 
     /// 解析输出文件路径；开启自动重名时避免覆盖已存在文件。
@@ -169,5 +277,20 @@ final class DotLottieConverter {
         let invalidCharacters = CharacterSet(charactersIn: "/:\\?%*|\"<>")
         let parts = name.components(separatedBy: invalidCharacters).filter { !$0.isEmpty }
         return parts.joined(separator: "-")
+    }
+
+    private func fileSize(at url: URL) -> UInt64 {
+        if let values = try? url.resourceValues(forKeys: [.fileSizeKey]),
+           let fileSize = values.fileSize,
+           fileSize >= 0 {
+            return UInt64(fileSize)
+        }
+
+        if let attributes = try? fileManager.attributesOfItem(atPath: url.path),
+           let fileSize = attributes[.size] as? NSNumber {
+            return fileSize.uint64Value
+        }
+
+        return 0
     }
 }

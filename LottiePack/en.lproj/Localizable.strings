@@ -9,6 +9,17 @@
 "detail.export_file" = "Export File";
 "detail.failure_reason" = "Failure Reason";
 "detail.no_selection" = "Select a task to view details.";
+"detail.size_analysis" = "Size Analysis";
+"detail.size_input" = "Input Size";
+"detail.size_input_share" = "Input Breakdown";
+"detail.size_input_summary_value" = "Total %@ (JSON %@, images %@)";
+"detail.size_json_growth" = "JSON Delta";
+"detail.size_json_growth_value" = "%@ vs source JSON, format %@";
+"detail.size_output" = "Final Output";
+"detail.size_output_summary_value" = "%@, compression %@";
+"detail.size_packaged" = "Packaged Payload";
+"detail.size_packaged_summary_value" = "Total %@ (JSON %@, images %@)";
+"detail.size_share_summary_value" = "JSON %@ / images %@";
 "detail.source" = "Source";
 "detail.source_path" = "Source Path";
 "detail.status" = "Status";
@@ -36,6 +47,7 @@
 "log.convert_success" = "Generated: %@";
 "log.export_directory_set" = "Export folder set: %@";
 "log.imported_count" = "Imported %d task(s)";
+"log.size_analysis" = "Size analysis %@: input %@ (JSON %@ / images %@) -> output %@, compression %@, format %@";
 "menu.language.english" = "English";
 "menu.language.japanese" = "Japanese";
 "menu.language.simplified_chinese" = "Chinese";
@@ -50,6 +62,10 @@
 "section.tasks.title" = "Tasks";
 "settings.auto_rename" = "Append an index automatically when output names conflict";
 "settings.description" = "Currently supports asset folders, single `data.json` files, and `.zip` archives. ZIP files are extracted to a temporary folder before conversion.";
+"settings.json_format.compressed" = "Compressed JSON";
+"settings.json_format.hint" = "Controls whether `animation.json` inside the package is minified or pretty-printed. The choice is remembered for future exports.";
+"settings.json_format.label" = "Animation JSON Format";
+"settings.json_format.readable" = "Readable JSON";
 "settings.language.hint" = "The selected language applies immediately and is remembered for the next launch.";
 "settings.language.label" = "App Language";
 "settings.reveal_in_finder" = "Reveal in Finder after conversion";
